@@ -1,0 +1,183 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required, immutable)
+    //   - displayName: string (optional)
+    //   - email: string (required, immutable)
+    //   - photoURL: string (optional)
+    //   - settings: map (optional)
+    //   - createdAt: timestamp (required, immutable)
+    //
+    // Collection: songs
+    // Document ID: {songId}
+    // Fields:
+    //   - id: string (required)
+    //   - title: string (required)
+    //   - artist: string (required)
+    //   - album: string (optional)
+    //   - duration: string (optional)
+    //   - coverUrl: string (optional)
+    //   - format: string (optional)
+    //   - bitrate: string (optional)
+    //
+    // Collection: playlists
+    // Document ID: {playlistId}
+    // Fields:
+    //   - id: string (required)
+    //   - title: string (required)
+    //   - description: string (optional)
+    //   - coverUrl: string (optional)
+    //   - ownerId: string (required, immutable)
+    //   - songIds: list (optional)
+    //   - isPublic: bool (optional)
+    //   - createdAt: timestamp (required, immutable)
+    //
+    // Collection: users/{userId}/favorites
+    // Document ID: {songId}
+    // Fields:
+    //   - userId: string (required, immutable)
+    //   - songId: string (required, immutable)
+    //   - timestamp: timestamp (required)
+    //
+    // Collection: users/{userId}/history
+    // Document ID: {historyId}
+    // Fields:
+    //   - userId: string (required, immutable)
+    //   - songId: string (required, immutable)
+    //   - timestamp: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    function isPlaylistOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.ownerId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "abishith0143@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasRequiredFields(['uid', 'email']) &&
+             data.uid is string && data.uid.size() > 0 && data.uid.size() < 128 &&
+             data.email is string && isValidEmail(data.email) &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100)) &&
+             (!('photoURL' in data) || (data.photoURL is string && isValidUrl(data.photoURL))) &&
+             (!('settings' in data) || data.settings is map) &&
+             (!('role' in data) || data.role in ['admin', 'user']);
+    }
+
+    function isValidSong(data) {
+      return hasRequiredFields(['id', 'title', 'artist']) &&
+             data.id is string && data.id.size() > 0 &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.artist is string && data.artist.size() > 0 && data.artist.size() < 200;
+    }
+
+    function isValidPlaylist(data) {
+      return hasRequiredFields(['id', 'title', 'ownerId']) &&
+             data.id is string && data.id.size() > 0 &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 100 &&
+             data.ownerId is string && data.ownerId == request.auth.uid &&
+             (!('songIds' in data) || (data.songIds is list && data.songIds.size() < 500)) &&
+             (!('isPublic' in data) || data.isPublic is bool);
+    }
+
+    function isValidFavorite(data) {
+      return hasRequiredFields(['userId', 'songId']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.songId is string && data.songId.size() > 0;
+    }
+
+    function isValidHistory(data) {
+      return hasRequiredFields(['userId', 'songId', 'timestamp']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.songId is string && data.songId.size() > 0 &&
+             data.timestamp is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && (!('role' in request.resource.data) || request.resource.data.role == 'user');
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
+      
+      match /favorites/{songId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidFavorite(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      match /history/{historyId} {
+        allow read: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidHistory(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+    }
+
+    match /songs/{songId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /playlists/{playlistId} {
+      allow read: if resource.data.isPublic == true || isPlaylistOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidPlaylist(request.resource.data);
+      allow update: if isPlaylistOwner() && isValidPlaylist(request.resource.data);
+      allow delete: if isPlaylistOwner() || isAdmin();
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

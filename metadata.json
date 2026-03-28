@@ -1,0 +1,8 @@
+{
+  "name": "Aura Music Player",
+  "description": "An ethereal, high-fidelity music player with a focus on atmosphere and immersive design.",
+  "requestFramePermissions": [
+    "microphone",
+    "geolocation"
+  ]
+}

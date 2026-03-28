@@ -1,0 +1,100 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A user of the Aura Music Player.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique identifier for the user." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "email": { "type": "string", "description": "The user's email address." },
+        "photoURL": { "type": "string", "description": "The URL to the user's profile photo." },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "themeColor": { "type": "string", "description": "The primary theme color." },
+            "dynamicBackground": { "type": "boolean", "description": "Whether to use dynamic backgrounds." }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time", "description": "When the user account was created." }
+      },
+      "required": ["uid", "email"]
+    },
+    "Song": {
+      "title": "Song",
+      "description": "Metadata for a music track.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "artist": { "type": "string" },
+        "album": { "type": "string" },
+        "duration": { "type": "string" },
+        "coverUrl": { "type": "string" },
+        "format": { "type": "string", "enum": ["FLAC", "MP3"] },
+        "bitrate": { "type": "string" }
+      },
+      "required": ["id", "title", "artist"]
+    },
+    "Playlist": {
+      "title": "Playlist",
+      "description": "A collection of songs created by a user.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "coverUrl": { "type": "string" },
+        "ownerId": { "type": "string", "description": "The UID of the user who owns this playlist." },
+        "songIds": { "type": "array", "items": { "type": "string" }, "description": "List of song IDs in this playlist." },
+        "isPublic": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "ownerId"]
+    },
+    "Favorite": {
+      "title": "Favorite",
+      "description": "A song liked by a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "songId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "songId"]
+    },
+    "History": {
+      "title": "History",
+      "description": "A record of a song played by a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "songId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "songId", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and settings."
+    },
+    "/songs/{songId}": {
+      "schema": "Song",
+      "description": "Global song metadata."
+    },
+    "/playlists/{playlistId}": {
+      "schema": "Playlist",
+      "description": "User-created playlists."
+    },
+    "/users/{userId}/favorites/{songId}": {
+      "schema": "Favorite",
+      "description": "Songs liked by a specific user."
+    },
+    "/users/{userId}/history/{historyId}": {
+      "schema": "History",
+      "description": "Playback history for a specific user."
+    }
+  }
+}
