@@ -27,33 +27,37 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   useEffect(() => {
     audioRef.current = new Audio();
-    
     const audio = audioRef.current;
     
-    const handleTimeUpdate = () => {
-      setProgress(audio.currentTime);
-    };
+    const handleTimeUpdate = () => setProgress(audio.currentTime);
+    const handleLoadedMetadata = () => setDuration(audio.duration);
     
-    const handleLoadedMetadata = () => {
-      setDuration(audio.duration);
-    };
-    
-    const handleEnded = () => {
-      setIsPlaying(false);
-      // Logic for next song could go here
-    };
-
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('ended', handleEnded);
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('ended', handleEnded);
       audio.pause();
     };
   }, []);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleEnded = () => {
+      const currentIndex = localSongs.findIndex(s => s.id === currentSong?.id);
+      if (currentIndex !== -1 && currentIndex < localSongs.length - 1) {
+        playSong(localSongs[currentIndex + 1]);
+      } else {
+        setIsPlaying(false);
+      }
+    };
+
+    audio.addEventListener('ended', handleEnded);
+    return () => audio.removeEventListener('ended', handleEnded);
+  }, [currentSong, localSongs]);
 
   const playSong = (song: Song) => {
     if (!audioRef.current) return;

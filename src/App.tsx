@@ -55,7 +55,7 @@ const IconButton = ({ icon: Icon, className, onClick }: { icon: any, className?:
 
 // --- Screens ---
 
-const LoginScreen = () => {
+const LoginScreen = ({ onGuestLogin }: { onGuestLogin: () => void }) => {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const handleLogin = async () => {
@@ -75,7 +75,7 @@ const LoginScreen = () => {
       <motion.div 
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="text-center space-y-12"
+        className="text-center space-y-12 px-6"
       >
         <div className="space-y-4">
           <h1 className="font-headline text-7xl font-bold tracking-tighter text-primary drop-shadow-[0_0_20px_rgba(161,250,255,0.5)]">
@@ -86,16 +86,29 @@ const LoginScreen = () => {
           </p>
         </div>
         
-        <button 
-          onClick={handleLogin}
-          disabled={isLoggingIn}
-          className="group relative px-12 py-4 bg-primary text-on-primary rounded-full font-headline font-bold text-lg shadow-[0_0_30px_rgba(161,250,255,0.4)] hover:shadow-[0_0_50px_rgba(161,250,255,0.6)] transition-all active:scale-95 disabled:opacity-50"
-        >
-          <div className="flex items-center gap-3">
-            <LogIn size={24} />
-            {isLoggingIn ? 'Connecting...' : 'Connect with Google'}
-          </div>
-        </button>
+        <div className="flex flex-col gap-4 w-full max-w-xs mx-auto">
+          <button 
+            onClick={handleLogin}
+            disabled={isLoggingIn}
+            className="group relative px-8 py-4 bg-primary text-on-primary rounded-full font-headline font-bold text-lg shadow-[0_0_30px_rgba(161,250,255,0.4)] hover:shadow-[0_0_50px_rgba(161,250,255,0.6)] transition-all active:scale-95 disabled:opacity-50"
+          >
+            <div className="flex items-center justify-center gap-3">
+              <LogIn size={24} />
+              {isLoggingIn ? 'Connecting...' : 'Connect with Google'}
+            </div>
+          </button>
+
+          <button 
+            onClick={onGuestLogin}
+            className="px-8 py-4 bg-surface-container-highest text-on-surface rounded-full font-headline font-bold text-lg border border-white/5 hover:bg-surface-container-high transition-all active:scale-95"
+          >
+            Continue as Guest
+          </button>
+        </div>
+
+        <p className="text-on-surface-variant text-xs font-body max-w-[240px] mx-auto opacity-60">
+          Guest mode allows local playback only. Connect to sync playlists and access cloud features.
+        </p>
       </motion.div>
     </div>
   );
@@ -189,7 +202,13 @@ const HomeScreen = () => {
             </div>
             <div className="flex gap-6 overflow-x-auto no-scrollbar pb-4 -mx-6 px-6">
               {localSongs.slice(0, 5).map((song, i) => (
-                <div key={song.id} onClick={() => playSong(song)} className={cn("flex-shrink-0 group space-y-4 cursor-pointer", i === 1 ? "w-72 pt-8" : "w-64")}>
+                <motion.div 
+                  key={song.id} 
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => playSong(song)} 
+                  className={cn("flex-shrink-0 group space-y-4 cursor-pointer", i === 1 ? "w-72 pt-8" : "w-64")}
+                >
                   <div className={cn("relative overflow-hidden rounded-xl bg-surface-container-high shadow-xl transition-transform duration-500 group-hover:scale-[1.02]", i === 1 ? "aspect-[4/5]" : "aspect-square")}>
                     <img 
                       src={song.coverUrl} 
@@ -209,7 +228,7 @@ const HomeScreen = () => {
                     <h4 className={cn("text-lg font-headline font-medium tracking-tight truncate", currentSong?.id === song.id ? "text-primary" : "text-on-surface")}>{song.title}</h4>
                     <p className="text-on-surface-variant font-label text-sm uppercase tracking-wide truncate">{song.artist}</p>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </section>
@@ -219,12 +238,14 @@ const HomeScreen = () => {
               <h3 className="text-xl font-headline font-medium">Heavy Rotation</h3>
               <div className="space-y-2">
                 {localSongs.slice(0, 6).map((track, i) => (
-                  <div 
+                  <motion.div 
                     key={track.id} 
+                    whileHover={{ x: 10, backgroundColor: "rgba(255, 255, 255, 0.05)" }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => playSong(track)}
                     className={cn(
                       "flex items-center gap-4 p-3 rounded-xl transition-colors group cursor-pointer",
-                      currentSong?.id === track.id ? "bg-primary/10" : "hover:bg-white/5"
+                      currentSong?.id === track.id ? "bg-primary/10" : ""
                     )}
                   >
                     <span className="text-zinc-600 font-headline w-6 text-center group-hover:text-primary">0{i+1}</span>
@@ -237,7 +258,7 @@ const HomeScreen = () => {
                       <button className="text-zinc-500 hover:text-tertiary"><Heart size={20} /></button>
                       <button className="text-zinc-500 hover:text-primary"><MoreVertical size={20} /></button>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             </section>
@@ -394,12 +415,14 @@ const LibraryScreen = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {localSongs.length > 0 ? (
                 localSongs.map(song => (
-                  <div 
+                  <motion.div 
                     key={song.id} 
+                    whileHover={{ scale: 1.02, backgroundColor: "rgba(161, 250, 255, 0.05)" }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => playSong(song)}
                     className={cn(
                       "group flex items-center justify-between p-3 rounded-xl transition-all cursor-pointer border",
-                      currentSong?.id === song.id ? "bg-primary/10 border-primary/20" : "bg-surface-container-high/20 border-transparent hover:border-primary/10 hover:bg-primary/5"
+                      currentSong?.id === song.id ? "bg-primary/10 border-primary/20" : "bg-surface-container-high/20 border-transparent hover:border-primary/10"
                     )}
                   >
                     <div className="flex items-center gap-4">
@@ -425,7 +448,7 @@ const LibraryScreen = () => {
                       <Heart size={18} className="text-on-surface-variant hover:text-tertiary transition-colors" />
                       <MoreVertical size={18} className="text-on-surface-variant" />
                     </div>
-                  </div>
+                  </motion.div>
                 ))
               ) : (
                 <div className="col-span-full py-20 text-center space-y-4 opacity-50">
@@ -448,8 +471,8 @@ const LibraryScreen = () => {
   );
 };
 
-const SettingsScreen = () => {
-  const { userProfile } = useFirebase();
+const SettingsScreen = ({ onLogin }: { onLogin?: () => void }) => {
+  const { userProfile, user } = useFirebase();
   
   return (
     <div className="max-w-2xl mx-auto space-y-12 pb-32">
@@ -459,17 +482,32 @@ const SettingsScreen = () => {
           <span className="text-[10px] uppercase tracking-widest text-on-surface-variant font-label">Account</span>
         </div>
         <div className="bg-surface-container/40 backdrop-blur-xl rounded-xl p-6 border border-white/5 shadow-2xl flex items-center gap-6">
-          <img src={userProfile?.photoURL || ''} alt="Profile" className="w-20 h-20 rounded-full border-2 border-primary/20" referrerPolicy="no-referrer" />
-          <div className="flex-1">
-            <h3 className="text-2xl font-headline font-bold">{userProfile?.displayName}</h3>
-            <p className="text-on-surface-variant font-body">{userProfile?.email}</p>
+          <div className="w-20 h-20 rounded-full border-2 border-primary/20 bg-surface-container-highest flex items-center justify-center overflow-hidden">
+            {userProfile?.photoURL ? (
+              <img src={userProfile.photoURL} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+              <div className="text-primary/40"><Library size={40} /></div>
+            )}
           </div>
-          <button 
-            onClick={() => logout()}
-            className="p-3 bg-error/10 text-error rounded-full hover:bg-error/20 transition-all"
-          >
-            <LogOut size={20} />
-          </button>
+          <div className="flex-1">
+            <h3 className="text-2xl font-headline font-bold">{userProfile?.displayName || 'Guest Explorer'}</h3>
+            <p className="text-on-surface-variant font-body">{userProfile?.email || 'Local mode active'}</p>
+          </div>
+          {user ? (
+            <button 
+              onClick={() => logout()}
+              className="p-3 bg-error/10 text-error rounded-full hover:bg-error/20 transition-all"
+            >
+              <LogOut size={20} />
+            </button>
+          ) : (
+            <button 
+              onClick={onLogin}
+              className="px-6 py-2 bg-primary text-on-primary rounded-full font-headline font-bold text-sm shadow-lg hover:scale-105 transition-transform"
+            >
+              Connect
+            </button>
+          )}
         </div>
       </section>
 
@@ -712,6 +750,7 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<'home' | 'library' | 'playlists' | 'settings'>('home');
   const [isNowPlayingOpen, setIsNowPlayingOpen] = useState(false);
   const [userPlaylists, setUserPlaylists] = useState<Playlist[]>([]);
+  const [guestMode, setGuestMode] = useState(false);
 
   useEffect(() => {
     if (user && isAuthReady) {
@@ -725,7 +764,7 @@ function AppContent() {
   }, [user, isAuthReady]);
 
   if (loading) return <SplashScreen onComplete={() => {}} />;
-  if (!user) return <LoginScreen />;
+  if (!user && !guestMode) return <LoginScreen onGuestLogin={() => setGuestMode(true)} />;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -799,7 +838,7 @@ function AppContent() {
               exit={{ opacity: 0, x: -20 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
             >
-              <SettingsScreen />
+              <SettingsScreen onLogin={() => setGuestMode(false)} />
             </motion.div>
           )}
           {activeTab === 'playlists' && (
